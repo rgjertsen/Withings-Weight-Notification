@@ -1,0 +1,62 @@
+blueprint:
+  name: Vektendring Notifikasjon
+  description: >
+    Sender en notifikasjon ved vektendring med endring siden forrige måling og over den siste måneden.
+
+    **Merk:** Denne blueprinten krever at du har en SQL-sensor som henter vekten din fra én måned siden. Se instruksjonene i README-filen for hvordan du setter opp dette.
+  domain: automation
+  input:
+    weight_sensor:
+      name: Vektsensor
+      description: Entitets-ID for vektsensoren din.
+      selector:
+        entity:
+          domain: sensor
+    sql_sensor:
+      name: SQL-sensor for vekt en måned siden
+      description: Entitets-ID for SQL-sensoren som henter vekten din fra én måned siden.
+      selector:
+        entity:
+          domain: sensor
+    notify_action:
+      name: Notifikasjonsaksjon
+      description: Definer handlingen for å sende notifikasjonen.
+      selector:
+        action: {}
+  source_url: https://github.com/dittbrukernavn/blueprints/vektendring_notifikasjon.yaml
+
+trigger:
+  - platform: state
+    entity_id: !input weight_sensor
+
+variables:
+  weight_sensor: !input weight_sensor
+  sql_sensor: !input sql_sensor
+
+action:
+  - variables:
+      current_weight: "{{ states(weight_sensor) | float }}"
+      previous_weight: "{{ trigger.from_state.state | float(0) }}"
+      weight_change: "{{ (current_weight - previous_weight) | round(1) }}"
+      change_word: "{{ 'nedgang' if weight_change < 0 else 'oppgang' }}"
+      weight_change_abs: "{{ weight_change | abs }}"
+      month_ago_weight_state: "{{ states(sql_sensor) }}"
+  - variables:
+      month_data_available: "{{ month_ago_weight_state not in ['unknown', 'unavailable', '0'] }}"
+  - if:
+      - "{{ month_data_available }}"
+    then:
+      - variables:
+          month_ago_weight: "{{ month_ago_weight_state | float(0) }}"
+          month_change: "{{ (current_weight - month_ago_weight) | round(1) }}"
+          month_change_word: "{{ 'nedgang' if month_change < 0 else 'oppgang' }}"
+          month_change_abs: "{{ month_change | abs }}"
+          message: >
+            Din nye vekt er {{ current_weight }} kg. Det er en {{ change_word }} på {{ weight_change_abs }} kg siden sist og en {{ month_change_word }} på {{ month_change_abs }} kg siste måneden.
+    else:
+      - variables:
+          message: >
+            Din nye vekt er {{ current_weight }} kg. Det er en {{ change_word }} på {{ weight_change_abs }} kg siden sist. Data fra én måned siden er ikke tilgjengelig.
+  - choose:
+      - conditions: "{{ notify_action }}"
+        sequence: !input notify_action
