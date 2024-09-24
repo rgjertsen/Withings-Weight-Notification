@@ -1,25 +1,55 @@
-This blueprint sets up an automation in Home Assistant that send a notification to your phone with the changes in your weight since the last weighing and the changes from the last month.
-
 Weight Change Notification Automation
-This automation sends a notification whenever your weight changes, including the change since the last measurement and over the last month.
+This repository contains a Home Assistant automation blueprint that sends a notification whenever your weight changes, including the change since the last measurement and over the last month.
+
+Table of Contents
+Overview
+Requirements
+Installation
+1. Set Up the SQL Sensor
+2. Import the Blueprint
+3. Create the Automation
+Configuration
+Troubleshooting
+Acknowledgments
+Overview
+This automation helps you keep track of your weight changes by sending you notifications that include:
+
+The change since your last measurement.
+The change over the last month.
+
+Note: The above image is an example of how the notification may appear on your device.
 
 Requirements
-Home Assistant SQL Integration: This automation requires the SQL integration to be set up in your Home Assistant instance.
-SQL Sensor: You need to create an SQL sensor that retrieves your weight from one month ago.
-Setting Up the SQL Sensor
-Install the SQL Integration:
+Home Assistant (latest version recommended)
+SQL Integration in Home Assistant
+Weight Sensor (e.g., from a smart scale like Withings)
+Notification Service (e.g., Mobile App notifications)
+Installation
+1. Set Up the SQL Sensor
+The automation requires an SQL sensor to retrieve your weight from one month ago. Follow these steps to set it up:
 
-Navigate to Settings > Devices & Services > Integrations.
-Click on Add Integration and search for SQL.
-Follow the prompts to install the SQL integration.
-Configure the SQL Sensor:
+a. Install the SQL Integration
+Go to Settings > Devices & Services > Integrations.
 
-Sensor Name: Weight_One_Month_Ago (or any name you prefer).
+Click on Add Integration.
 
-Database URL: For the default SQLite database, use sqlite:////config/home-assistant_v2.db.
+Search for SQL and select it.
 
-Ensure the number of slashes (////) is correct for SQLite.
-SQL Query:
+Enter the database URL:
+
+perl
+Kopier kode
+sqlite:////config/home-assistant_v2.db
+Note: The number of slashes (////) is important for SQLite databases.
+
+b. Create the SQL Sensor
+After adding the SQL integration, you'll need to configure the sensor.
+
+Use the following settings:
+
+Name: Weight One Month Ago (or any name you prefer)
+
+Query:
 
 sql
 Kopier kode
@@ -31,18 +61,15 @@ WHERE sm.entity_id = 'your_weight_sensor_entity_id'
   AND s.state NOT IN ('unknown', 'unavailable', '')
 ORDER BY s.last_updated DESC
 LIMIT 1
-Important: Replace 'your_weight_sensor_entity_id' with the actual entity ID of your weight sensor (e.g., 'sensor.withings_weight').
+Replace 'your_weight_sensor_entity_id' with the actual entity ID of your weight sensor (e.g., 'sensor.withings_weight').
+
 Column: state
 
 Unit of Measurement: kg
 
-Icon: (Optional) You can set an icon like mdi:weight.
+Icon: mdi:weight (optional)
 
-Save the Sensor Configuration:
-
-Complete the setup and ensure the sensor is created.
-Verify the SQL Sensor:
-
+c. Verify the SQL Sensor
 Go to Developer Tools > States.
 Look for the sensor you just created (e.g., sensor.weight_one_month_ago).
 Ensure it has a valid value (not unknown or empty). If it shows unknown, you might not have data from one month ago yet.
