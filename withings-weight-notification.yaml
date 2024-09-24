@@ -18,11 +18,11 @@ blueprint:
       selector:
         entity:
           domain: sensor
-    notify_action:
-      name: Notifikasjonsaksjon
-      description: Definer handlingen for å sende notifikasjonen.
+    notification_service:
+      name: Notifikasjonstjeneste
+      description: Navnet på notifikasjonstjenesten din (f.eks. `notify.mobile_app_din_mobil`).
       selector:
-        action: {}
+        text:
   source_url: https://github.com/dittbrukernavn/blueprints/vektendring_notifikasjon.yaml
 
 trigger:
@@ -32,6 +32,7 @@ trigger:
 variables:
   weight_sensor: !input weight_sensor
   sql_sensor: !input sql_sensor
+  notification_service: !input notification_service
 
 action:
   - variables:
@@ -41,10 +42,10 @@ action:
       change_word: "{{ 'nedgang' if weight_change < 0 else 'oppgang' }}"
       weight_change_abs: "{{ weight_change | abs }}"
       month_ago_weight_state: "{{ states(sql_sensor) }}"
-  - variables:
       month_data_available: "{{ month_ago_weight_state not in ['unknown', 'unavailable', '0'] }}"
   - if:
-      - "{{ month_data_available }}"
+      - condition: template
+        value_template: "{{ month_data_available }}"
     then:
       - variables:
           month_ago_weight: "{{ month_ago_weight_state | float(0) }}"
@@ -57,6 +58,9 @@ action:
       - variables:
           message: >
             Din nye vekt er {{ current_weight }} kg. Det er en {{ change_word }} på {{ weight_change_abs }} kg siden sist. Data fra én måned siden er ikke tilgjengelig.
-  - choose:
-      - conditions: "{{ notify_action }}"
-        sequence: !input notify_action
+  - service: !input notification_service
+    data:
+      title: Vektoppdatering
+      message: "{{ message }}"
+
+mode: single
