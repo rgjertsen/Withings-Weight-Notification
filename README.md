@@ -1,4 +1,5 @@
 Weight Change Notification Automation
+
 This repository contains a Home Assistant automation blueprint that sends a notification whenever your weight changes, including the change since the last measurement and over the last month.
 
 Table of Contents
